@@ -1,0 +1,80 @@
+groups:
+  - name: ai_sre_agent_alerts
+    rules:
+      - alert: AIWorkflowSlow
+        expr: sum(ai_sre_workflow_duration_seconds_sum) / sum(ai_sre_workflow_duration_seconds_count) > 60
+        for: 5s
+        labels:
+          severity: warning
+          service: ai-sre-agent
+        annotations:
+          summary: "AI Workflow Slow"
+          description: "The AI incident workflow is taking longer than expected. Investigate agent latency, LLM calls, or backend bottlenecks."
+
+      - alert: AIWorkflowFailed
+        expr: increase(ai_sre_workflow_runs_total{verdict="FAIL"}[10m]) > 0
+        for: 5s
+        labels:
+          severity: critical
+          service: ai-sre-agent
+        annotations:
+          summary: "AI Workflow Failed"
+          description: "At least one AI incident workflow failed evaluation in the last 10 minutes."
+
+      - alert: DeployGateBlockedStaging
+        expr: increase(ai_sre_deploy_gate_decisions_total{staging_allowed="false"}[10m]) > 0
+        for: 5s
+        labels:
+          severity: critical
+          service: ai-sre-agent
+        annotations:
+          summary: "Deploy Gate Blocked Staging"
+          description: "The deterministic deploy gate blocked a generated patch from staging deployment."
+
+  - name: demo_auth_service_alerts
+    rules:
+      - alert: DemoDatabaseConnectionLeak
+        expr: demo_db_active_connections > 8
+        labels:
+          severity: critical
+          service: auth-service
+        annotations:
+          summary: "Database Connection Leak"
+          description: "Demo auth-service has too many active database connections. This likely indicates a connection leak in the login flow."
+          logs: "Database connection pool nearing exhaustion; Timeout while querying users table; Too many active database sessions"
+          trace_summary: "POST /login → db.query(); Database session remained active; Repeated connection retries detected"
+
+      - alert: DemoDatabasePoolExhausted
+        expr: increase(demo_db_pool_exhausted_total[1m]) > 0
+        labels:
+          severity: critical
+          service: auth-service
+        annotations:
+          summary: "Database Pool Exhausted"
+          description: "Demo auth-service database pool is exhausted. Login requests are failing because connections are not available."
+          logs: "Database connection pool exhausted; Login request failed with 503; Too many active database sessions"
+          trace_summary: "POST /login → acquire connection; Pool exhausted; Request failed"
+
+      - alert: DemoLoginSlow
+        expr: rate(demo_auth_login_latency_seconds_sum[1m]) / rate(demo_auth_login_latency_seconds_count[1m]) > 2
+        for: 5s
+        labels:
+          severity: warning
+          service: auth-service
+        annotations:
+          summary: "Slow Login Latency"
+          description: "Demo auth-service login latency is above 2 seconds."
+          logs: "Login latency increased; Users experiencing slow authentication"
+          trace_summary: "POST /login → delayed response; High p95 latency detected"
+
+      - alert: DemoLoginErrorsHigh
+        expr: increase(demo_auth_login_errors_total[1m]) > 3
+        for: 5s
+        labels:
+          severity: high
+          service: auth-service
+        annotations:
+          summary: "High Login Error Rate"
+          description: "Demo auth-service is producing repeated login errors."
+          logs: "Random simulated login failures; Login request returned 500"
+          trace_summary: "POST /login → backend error; Error rate spike detected"

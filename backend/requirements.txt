@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+langgraph
+langchain
+langchain-openai
+langchain-anthropic
+pydantic
+python-dotenv
+motor
+pymongo
+httpx
+requests
+gitpython
+rich
+playwright
+pytest

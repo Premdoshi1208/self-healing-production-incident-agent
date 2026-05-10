@@ -1,0 +1,239 @@
+{
+  "id": null,
+  "uid": "ai-sre-agent-dashboard",
+  "title": "AI SRE Agent Observability",
+  "tags": ["ai", "sre", "incident-response"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total AI Workflow Runs",
+      "id": 1,
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(ai_sre_workflow_runs_total)",
+          "legendFormat": "Total Runs"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "PASS Runs",
+      "id": 2,
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(ai_sre_workflow_runs_total{verdict=\"PASS\"})",
+          "legendFormat": "PASS"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Memory Saves",
+      "id": 3,
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(ai_sre_memory_saves_total)",
+          "legendFormat": "Memory Saves"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Average Workflow Duration",
+      "id": 4,
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "ai_sre_workflow_duration_seconds_sum / ai_sre_workflow_duration_seconds_count",
+          "legendFormat": "Avg Duration"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Workflow Runs Over Time",
+      "id": 5,
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (verdict) (ai_sre_workflow_runs_total)",
+          "legendFormat": "{{verdict}}"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Workflow Duration By Service",
+      "id": 6,
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "ai_sre_workflow_duration_seconds_sum / ai_sre_workflow_duration_seconds_count",
+          "legendFormat": "{{service}} - {{severity}}"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Runs By Service",
+      "id": 7,
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (service) (ai_sre_workflow_runs_total)",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }
+    },
+    {
+      "type": "bargauge",
+      "title": "Runs By Severity",
+      "id": 8,
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (severity) (ai_sre_workflow_runs_total)",
+          "legendFormat": "{{severity}}"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }
+    },
+    {
+      "type": "stat",
+      "title": "Deploy Gate Decisions",
+      "id": 9,
+      "gridPos": { "x": 0, "y": 20, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(ai_sre_deploy_gate_decisions_total)",
+          "legendFormat": "Decisions"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Staging Allowed",
+      "id": 10,
+      "gridPos": { "x": 6, "y": 20, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(ai_sre_deploy_gate_decisions_total{staging_allowed=\"true\"})",
+          "legendFormat": "Staging Allowed"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Production Blocked",
+      "id": 11,
+      "gridPos": { "x": 12, "y": 20, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(ai_sre_deploy_gate_decisions_total{production_allowed=\"false\"})",
+          "legendFormat": "Production Blocked"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Human Approval Required",
+      "id": 12,
+      "gridPos": { "x": 18, "y": 20, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(ai_sre_deploy_gate_decisions_total{human_required=\"true\"})",
+          "legendFormat": "Human Required"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Deploy Gate Decisions By Service / Severity",
+      "id": 13,
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (service, severity, staging_allowed, production_allowed, human_required) (ai_sre_deploy_gate_decisions_total)",
+          "legendFormat": "{{service}} / {{severity}} / staging={{staging_allowed}} / prod={{production_allowed}} / human={{human_required}}"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }
+    }
+  ]
+}
