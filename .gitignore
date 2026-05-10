@@ -1,11 +1,27 @@
+# Python
 .venv/
-.env
-backend/.env
-frontend/node_modules/
-frontend/.next/
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Secrets
+.env
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# OS/editor
 .DS_Store
+.vscode/settings.json
+
+# Runtime/generated artifacts
 patch_workspaces/
 generated_patches/
 backend/storage/*.json
+monitoring/grafana/data/
+
+# Logs
+*.log

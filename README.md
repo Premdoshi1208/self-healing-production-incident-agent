@@ -1,324 +1,847 @@
+Perfect. Next we fill the final docs.
+
+## 1. Paste this into `README.md`
+
+````markdown
 # Self-Healing Production Incident Agent
 
-An AI SRE command center that turns production alerts into RCA, fix plans, patch artifacts, QA signals, deterministic deploy-gate decisions, human approvals, metrics, and reusable Reflexion memory.
+An end-to-end AI SRE platform that detects production incidents, performs root cause analysis, searches the codebase, generates a patch, runs deterministic tests, applies a deployment safety gate, stores Reflexion memory, and exposes observability through Prometheus and Grafana.
+
+## One-line pitch
+
+A production-style autonomous incident remediation agent that turns Prometheus alerts into RCA, codebase-aware fixes, tested patch diffs, deploy-gate decisions, and human-reviewable remediation artifacts.
+
+## Why this project matters
+
+Most AI agent projects stop at chat or simple tool calling. This project demonstrates a realistic production workflow:
+
+```text
+Production issue
+↓
+Prometheus detects symptoms
+↓
+Alertmanager sends webhook
+↓
+AI incident workflow starts
+↓
+RCA Agent diagnoses failure
+↓
+Codebase Agent finds faulty files
+↓
+Patch Agent generates a real diff
+↓
+Patch is applied in a safe workspace
+↓
+Tests run deterministically
+↓
+QA validates
+↓
+Evaluation scores the run
+↓
+Deploy Gate allows staging but blocks production
+↓
+Human approval remains required
+↓
+Memory stores learning for future incidents
+↓
+Prometheus/Grafana track system health
+````
+
+## Core features
+
+* Real FastAPI backend for AI incident orchestration
+* Real demo auth service exposing Prometheus metrics
+* Prometheus scraping backend and demo service metrics
+* Alertmanager webhook triggering AI workflow automatically
+* Codebase-aware remediation against a local target repo
+* Code search agent that identifies suspected files/functions
+* Patch generation as unified git diff
+* Safe patch application in isolated workspace
+* Deterministic test runner
+* QA validation agent
+* Evaluation layer with hidden-label and heuristic modes
+* Deterministic deploy gate
+* Human approval workflow
+* Reflexion memory for incident learning
+* Run history and patch artifact storage
+* Grafana observability dashboard
+* Interactive Next.js command-center frontend
 
 ## Architecture
 
 ```text
-Demo Auth Service :8100
-  exposes /metrics and controlled bug modes
-        |
-        v
-Prometheus :9090 ----> Alertmanager :9093
-        |                    |
-        |                    v
-        |        AI Backend Webhook :8000/api/prometheus/webhook
-        |                    |
-        v                    v
-Grafana :3001       Incident Workflow
-                     Memory Retrieval
-                     RCA Agent
-                     Fix Planner Agent
-                     Codebase Search Agent
-                     Code Context Builder
-                     Real Patch Diff Agent
-                     Patch Artifact
-                     Safe Workspace Patch Apply
-                     Deterministic Test Runner
-                     QA Agent
-                     Evaluation Layer
-                     Deterministic Deploy Gate
-                     Human Approval Store
-                     Reflexion Memory
-                     Patch Artifact
-                     Prometheus Metrics
-                     Run History
-                            |
-                            v
-Frontend Dashboard :3000
+Demo Auth Service
+  └── /metrics
+        ↓
+Prometheus
+        ↓
+Alertmanager
+        ↓
+FastAPI AI Backend Webhook
+        ↓
+Incident Workflow
+        ├── Memory Retrieval
+        ├── RCA Agent
+        ├── Fix Planner
+        ├── Codebase Search
+        ├── Code Context Builder
+        ├── Real Patch Generator
+        ├── Patch Artifact Writer
+        ├── Safe Patch Applier
+        ├── Test Runner
+        ├── QA Agent
+        ├── Evaluation Layer
+        ├── Deploy Gate
+        ├── Reflexion Memory
+        └── Run History
+        ↓
+Frontend Dashboard + Grafana
 ```
 
-## Problem It Solves
+## Tech stack
 
-Production incident response is usually scattered across alerts, logs, traces, dashboards, pull requests, runbooks, and chat. This project demonstrates a safer pattern for AI-assisted operations: the LLM investigates and proposes, while deterministic policy and human approval decide what can ship.
+### Backend
 
-## Key Features
+* Python
+* FastAPI
+* LangChain / LLM-compatible agent calls
+* Prometheus client
+* JSON-backed local persistence
+* Deterministic patch/test/deploy-gate services
 
-- FastAPI AI backend with manual incident runs and Alertmanager webhook ingestion.
-- Real Prometheus metrics for workflow runs, duration, memory saves, and deploy gate decisions.
-- Demo auth service with real metrics and controlled DB leak, slow login, and random error modes.
-- Prometheus alert rules that detect the demo DB connection leak and send Alertmanager webhooks.
-- Next.js dashboard with service health, demo controls, run history search, trace drawer, deploy gate tab, approvals, and latest QA result.
-- Reflexion memory persisted to JSON for future incident context.
-- Codebase-aware search over a configured local repo with suspected files, matched terms, reasons, and previews.
-- Real unified diffs saved as generated patch artifacts in `generated_patches/`.
-- Safe patch application to isolated `patch_workspaces/` copies, never directly to the source repo.
-- Deterministic test runner for patched workspaces with results saved to `backend/storage/test_runs.json`.
-- Playwright E2E test setup plus `POST /api/qa/run-playwright`.
-- Optional GitHub PR preparation stub that is safe when credentials are missing.
-- Human approval API for staging approval, rejection, and explicit production approval.
+### Frontend
 
-## Codebase-Aware Remediation
+* Next.js
+* React
+* Tailwind CSS
+* Lucide React icons
+* Interactive agent trace drawer
 
-The workflow can inspect a real target codebase instead of only reasoning from logs and metrics.
+### Monitoring
 
-Local repo mode:
+* Prometheus
+* Alertmanager
+* Grafana
+* Docker Compose
+
+### Demo service
+
+* FastAPI auth service
+* Simulated DB connection pool
+* Real Prometheus metrics
+* Toggleable bug modes
+
+## What is real vs simulated
+
+### Real
+
+* FastAPI backend
+* Prometheus metrics endpoint
+* Prometheus scraping
+* Alertmanager webhook delivery
+* Demo auth service metrics
+* Codebase search over local files
+* Patch diff generation
+* Patch artifact saving
+* Safe workspace patch application
+* Deterministic tests
+* Deploy gate logic
+* Frontend trace visualization
+* Grafana dashboard
+
+### Simulated/demo
+
+* The production app is a local demo auth service
+* The target repo is a small local sample repo
+* GitHub PR creation can be disabled unless configured
+* Production deployment is intentionally blocked and requires human approval
+
+This is a production-style local demo, not a deployed enterprise system.
+
+## Safety model
+
+The LLM is never allowed to directly deploy to production.
+
+The system follows this safety pattern:
 
 ```text
-CODEBASE_LOCAL_PATH=target_repo
+LLM proposes
+Deterministic tools apply/test
+Deploy Gate decides staging eligibility
+Human approval required for production
 ```
 
-When configured, the Codebase Search Agent scans the local repo, ignores noisy folders such as `.git`, `node_modules`, `.venv`, `dist`, and `build`, then ranks suspected files from incident, log, trace, and RCA keywords. The Code Context Builder reads only the top files and caps excerpt size so the LLM never receives an entire repo dump.
-
-GitHub mode:
+Production is always blocked by default:
 
 ```text
-GITHUB_TOKEN=
-GITHUB_REPO=owner/repo
-GITHUB_DEFAULT_BRANCH=main
-ENABLE_GITHUB_PR=false
+production_allowed = false
+production_requires_human = true
 ```
 
-GitHub PR creation is disabled unless `ENABLE_GITHUB_PR=true` and credentials are present. The endpoint prepares branch, title, body, and patch metadata for human-controlled PR creation. It does not deploy or push automatically.
+## How to run
 
-Patch artifacts:
-
-- Each workflow saves a markdown artifact under `generated_patches/`.
-- Artifacts include incident metadata, RCA, fix plan, codebase search, generated unified diff, patch apply result, test result, QA, evaluation, and deploy gate.
-- Real patches are applied only to `patch_workspaces/<run_id>/`, never to `CODEBASE_LOCAL_PATH`.
-
-Deploy Gate behavior:
-
-- Staging requires QA approval, evaluation verdict `PASS`, score `>= 0.85`, successful patch apply if a real diff exists, and passing deterministic tests if tests ran.
-- Production is always blocked by default.
-- `production_requires_human` is always `true`.
-
-## Tech Stack
-
-- Backend: FastAPI, Python 3.9, LangChain OpenAI client, Pydantic, Prometheus client.
-- Frontend: Next.js 14, React, Tailwind CSS, lucide-react.
-- Monitoring: Prometheus, Alertmanager, Grafana, Docker Compose.
-- QA: Playwright.
-- Persistence: JSON stores for workflow runs, memory, approvals, and test runs.
-
-## Real vs Simulated
-
-Real:
-- FastAPI services, Prometheus scraping, Alertmanager webhook delivery, Grafana dashboards.
-- End-to-end alert loop from demo service metrics to AI workflow history.
-- Deterministic deploy gate and human approval persistence.
-- Codebase search, unified diff artifact persistence, isolated patch apply, deterministic target tests, and Playwright test execution.
-
-Simulated:
-- The generated code patch is saved for review, not applied to production automatically.
-- The demo auth service intentionally contains controllable failure modes.
-- GitHub PR creation is a safe stub unless future credentials and branch logic are added.
-
-Safety note: the LLM never deploys directly. Production is always blocked by the deterministic deploy gate and requires a human approval record.
-
-## Environment
-
-Create a `.env` from `.env.example`:
+### 1. Backend
 
 ```bash
-cp .env.example .env
-```
-
-Variables:
-
-```text
-OPENAI_API_KEY=
-OPENAI_BASE_URL=
-OPENAI_MODEL=deepseek/deepseek-chat-v3-0324
-OPENAI_TIMEOUT=20
-OPENAI_MAX_RETRIES=0
-GITHUB_TOKEN=
-GITHUB_REPO=
-GITHUB_DEFAULT_BRANCH=main
-CODEBASE_LOCAL_PATH=target_repo
-ENABLE_GITHUB_PR=false
-```
-
-If `OPENAI_API_KEY` is missing or invalid, workflow runs fail closed with structured error details and deployment remains blocked.
-
-## Install
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r backend/requirements.txt
-cd frontend
-npm install
-npx playwright install chromium
-cd ..
-```
-
-## Run Locally
-
-Terminal 1, AI backend:
-
-```bash
+cd "/Users/mac/Desktop/Self-Healing Production Agent"
+source ".venv/bin/activate"
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Terminal 2, demo auth service:
+Backend health:
+
+```text
+http://127.0.0.1:8000/health
+```
+
+Backend docs:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+---
+
+### 2. Demo auth service
 
 ```bash
+cd "/Users/mac/Desktop/Self-Healing Production Agent"
+source ".venv/bin/activate"
 uvicorn demo_service.app:app --reload --host 0.0.0.0 --port 8100
 ```
 
-Terminal 3, frontend:
+Demo service health:
+
+```text
+http://127.0.0.1:8100/health
+```
+
+Demo service docs:
+
+```text
+http://127.0.0.1:8100/docs
+```
+
+---
+
+### 3. Frontend
 
 ```bash
-cd frontend
+cd "/Users/mac/Desktop/Self-Healing Production Agent/frontend"
 npm run dev
 ```
 
-Terminal 4, monitoring:
+Frontend:
+
+```text
+http://localhost:3000
+```
+
+---
+
+### 4. Monitoring stack
+
+Make sure Docker Desktop is running.
 
 ```bash
+cd "/Users/mac/Desktop/Self-Healing Production Agent"
 docker compose up -d
 ```
 
 Open:
 
-- Frontend: http://localhost:3000
-- Backend docs: http://127.0.0.1:8000/docs
-- Demo service docs: http://127.0.0.1:8100/docs
-- Prometheus: http://localhost:9090
-- Alertmanager: http://localhost:9093
-- Grafana: http://localhost:3001
-
-## Verify
-
-```bash
-scripts/verify_project.sh
+```text
+Prometheus:    http://localhost:9090
+Alertmanager:  http://localhost:9093
+Grafana:       http://localhost:3001
 ```
 
-The script checks backend, demo service, frontend, Prometheus, Alertmanager, Grafana, both `/metrics` endpoints, and Prometheus targets for `ai-sre-backend` and `demo-auth-service`.
+Grafana login:
 
-## Demo Flow 1: Manual Incident
+```text
+username: admin
+password: admin
+```
 
-1. Open http://localhost:3000.
-2. Choose a fake incident in "Run Incident Workflow".
-3. Click "Run Workflow".
-4. Open the agent trace drawer.
-5. Show RCA, fix plan, code patch, QA, evaluation, deploy gate, patch artifact, and approval buttons.
+## Demo flow 1: Manual AI incident workflow
 
-## Demo Flow 2: Prometheus Simulator
+1. Open frontend:
 
-1. Open the dashboard.
-2. In "Prometheus Alert Simulator", choose an alert template.
-3. Click "Send Alert".
-4. The backend webhook converts the payload into an incident and runs the full workflow.
-5. Refresh Recent Workflow Runs and open the new trace.
+```text
+http://localhost:3000
+```
 
-## Demo Flow 3: Real DB Leak Alert Loop
+2. Select an incident.
+3. Click **Run Workflow**.
+4. Open the latest run.
+5. Inspect tabs:
 
-1. Open the dashboard and confirm service health.
-2. In "Demo Auth Service Controls", click "Enable DB Leak".
-3. Click "Send Login Traffic".
-4. Open Prometheus alerts at http://localhost:9090/alerts and wait for `DemoDatabaseConnectionLeak`.
-5. Open Alertmanager at http://localhost:9093 and confirm the alert is active.
-6. Alertmanager sends the webhook to the AI backend.
-7. Refresh the dashboard and open the new workflow run.
-8. Show the Code Search tab finding `target_repo/services/auth/login.py` or `target_repo/services/auth/db.py`.
-9. Show the Patch Diff tab with a standard `diff --git` patch.
-10. Show the Tests tab proving the patch was applied to a safe workspace and validated.
-11. Show the Deploy Gate tab approving staging only when deterministic checks pass and still requiring human approval for production.
-12. Query Prometheus:
+```text
+RCA
+Fix Plan
+Code Search
+Patch Diff
+Tests
+QA
+Evaluation
+Deploy Gate
+Pull Request
+```
+
+Expected result:
+
+```text
+Code Search finds login.py/db.py
+Patch Diff generates try/finally cleanup
+Tests pass
+Deploy Gate allows staging
+Production remains blocked
+Human approval required
+```
+
+## Demo flow 2: Prometheus-style alert simulator
+
+1. Open frontend.
+2. Go to **Prometheus Alert Simulator**.
+3. Choose `Database Connection Pool Exhausted`.
+4. Click **Send Alert**.
+5. The backend receives a webhook and starts the AI workflow.
+6. Open the latest run and inspect the trace drawer.
+
+## Demo flow 3: Real demo service DB leak
+
+1. Open frontend.
+2. Go to **Demo Auth Service Controls**.
+3. Click **Enable DB Leak**.
+4. Click **Send Login Traffic**.
+5. Prometheus detects:
+
+```text
+demo_db_active_connections > 8
+```
+
+6. Open Prometheus alerts:
+
+```text
+http://localhost:9090/alerts
+```
+
+7. Confirm `DemoDatabaseConnectionLeak` is firing.
+8. Open Alertmanager:
+
+```text
+http://localhost:9093
+```
+
+9. Confirm Alertmanager received the alert.
+10. Backend webhook starts the AI workflow.
+11. Frontend shows a new run.
+12. Open the run and inspect:
+
+```text
+Code Search
+Patch Diff
+Tests
+Deploy Gate
+```
+
+## Important Prometheus queries
+
+```promql
+demo_db_active_connections
+```
 
 ```promql
 ai_sre_workflow_runs_total
+```
+
+```promql
 ai_sre_deploy_gate_decisions_total
 ```
 
-13. Open Grafana and review workflow plus deploy gate panels.
-
-## Demo Flow 4: Codebase-Aware Remediation
-
-1. Set `CODEBASE_LOCAL_PATH=target_repo` in `.env`.
-2. Run the manual `Database Connection Leak` incident or trigger the real demo service DB leak.
-3. The Codebase Search Agent ranks auth/database files from `target_repo/`.
-4. The Real Patch Agent generates a unified diff that wraps login database access in `try/finally`.
-5. The Patch Apply Service copies `target_repo/` into `patch_workspaces/` and applies the diff there.
-6. The Test Runner runs the target repo tests and stores the result in `backend/storage/test_runs.json`.
-7. The deploy gate allows staging only if QA, evaluation, patch apply, and tests pass.
-8. The Pull Request tab can call `POST /api/github/pr/from-run/{run_id}` and will safely report disabled unless GitHub is configured.
-
-## QA
-
-Run E2E tests from the frontend folder:
-
-```bash
-cd frontend
-npm run test:e2e
+```promql
+ai_sre_memory_saves_total
 ```
 
-Or run through the backend:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/qa/run-playwright
+```promql
+ai_sre_workflow_duration_seconds_count
 ```
 
-Test results are saved to `backend/storage/test_runs.json`. The workflow saves target-repo test results in `test_result` and can also expose latest Playwright QA runs through the dashboard.
+## Alert deduplication
 
-## Human Approval API
+Repeated Alertmanager webhooks for the same firing alert are deduplicated.
 
-```bash
-curl http://127.0.0.1:8000/api/approvals
-curl http://127.0.0.1:8000/api/approvals/pending
-curl -X POST http://127.0.0.1:8000/api/approvals/{run_id}/approve-staging
-curl -X POST http://127.0.0.1:8000/api/approvals/{run_id}/reject
-curl -X POST http://127.0.0.1:8000/api/approvals/{run_id}/approve-production
-```
-
-## GitHub PR Stub
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/github/pr/from-run/{run_id}
-```
-
-Without `ENABLE_GITHUB_PR=true`, `GITHUB_TOKEN`, and `GITHUB_REPO`, the endpoint returns a clear disabled message. With credentials, it prepares branch and PR metadata for a future safe implementation.
-
-## Screenshots
-
-Add screenshots here after recording the demo:
-
-- `docs/screenshots/dashboard.png`
-- `docs/screenshots/agent-trace.png`
-- `docs/screenshots/prometheus-alert.png`
-- `docs/screenshots/grafana-deploy-gate.png`
-
-## Project Structure
+Expected behavior:
 
 ```text
-backend/
-  agents/
-  api/routes/
-  core/
-  evaluation/
-  memory/
-  observability/
-  services/
-  storage/
-  workflows/
-demo_service/
-frontend/
-monitoring/
-generated_patches/
-target_repo/
-docs/
-scripts/
-README.md
-.env.example
-docker-compose.yml
+First alert → workflow runs
+Repeated same alert → skipped during cooldown
 ```
 
-## Future Work
+Dedup endpoint:
 
-- Apply generated patches to isolated branches and open real PRs after human review.
-- Add authenticated users and role-based approval permissions.
-- Store run history in Postgres or MongoDB instead of JSON.
-- Add OpenTelemetry traces and log ingestion from real services.
-- Add CI that runs backend tests, Playwright tests, and dashboard provisioning checks.
+```text
+GET /api/prometheus/dedup
+POST /api/prometheus/dedup/clear
+```
+
+## Codebase-aware remediation
+
+The system searches a local target repo:
+
+```text
+target_repo/
+```
+
+For a DB leak incident, it identifies files like:
+
+```text
+target_repo/services/auth/login.py
+target_repo/services/auth/db.py
+target_repo/tests/test_login.py
+```
+
+It then generates a patch like:
+
+```diff
+conn = get_connection()
+try:
+    user = conn.query_user(username)
+    ...
+finally:
+    conn.close()
+```
+
+The patch is applied in:
+
+```text
+patch_workspaces/
+```
+
+The original target repo is not directly modified.
+
+## Patch artifacts
+
+Generated patch artifacts are saved in:
+
+```text
+generated_patches/
+```
+
+Each artifact contains:
+
+* incident summary
+* RCA
+* fix plan
+* code search result
+* patch diff
+* test result
+* QA validation
+* evaluation
+* deploy gate result
+
+## Deploy Gate
+
+The deploy gate is deterministic.
+
+It checks:
+
+* QA approval
+* evaluation verdict
+* evaluation score
+* patch apply status
+* test status
+* severity
+* human approval requirement
+
+Example result:
+
+```json
+{
+  "staging_allowed": true,
+  "production_allowed": false,
+  "production_requires_human": true,
+  "decision_summary": "Patch is approved for staging deployment. Production deployment still requires human approval."
+}
+```
+
+## Human approval
+
+Production deployment is never automatic.
+
+Approval objects track:
+
+```text
+pending
+approved_staging
+rejected
+approved_production
+```
+
+The frontend shows approval status in the run drawer.
+
+## Future improvements
+
+* Real GitHub PR creation with token
+* Kubernetes staging deployment
+* PostgreSQL/MongoDB instead of JSON storage
+* Authentication and RBAC
+* Webhook signing
+* CI/CD integration
+* Cloud deployment
+* More realistic service topology
+* OpenTelemetry distributed tracing
+* More advanced test selection
+* Cost and token tracking per agent step
+
+## Final project story
+
+This project demonstrates an end-to-end autonomous SRE remediation loop:
+
+```text
+A real demo service develops a DB connection leak.
+Prometheus detects the issue.
+Alertmanager sends the alert to the AI backend.
+The AI performs RCA.
+The Codebase Agent finds the faulty login code.
+The Patch Agent generates a real diff.
+The patch is applied safely in a workspace.
+Tests pass.
+QA validates.
+Evaluation scores the run.
+Deploy Gate allows staging but blocks production.
+Human approval remains required.
+Memory stores the learning.
+Grafana and the frontend show the full trace.
+```
+
+````
+
+## 2. Paste this into `docs/demo_flow.md`
+
+```markdown
+# Demo Flow — Self-Healing Production Incident Agent
+
+Use this script when showing the project to recruiters, founders, or interviewers.
+
+## 1. Start all services
+
+### Backend
+
+```bash
+cd "/Users/mac/Desktop/Self-Healing Production Agent"
+source ".venv/bin/activate"
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+````
+
+### Demo auth service
+
+```bash
+cd "/Users/mac/Desktop/Self-Healing Production Agent"
+source ".venv/bin/activate"
+uvicorn demo_service.app:app --reload --host 0.0.0.0 --port 8100
+```
+
+### Frontend
+
+```bash
+cd "/Users/mac/Desktop/Self-Healing Production Agent/frontend"
+npm run dev
+```
+
+### Monitoring
+
+```bash
+cd "/Users/mac/Desktop/Self-Healing Production Agent"
+docker compose up -d
+```
+
+## 2. Open main pages
+
+```text
+Frontend:      http://localhost:3000
+Backend docs:  http://127.0.0.1:8000/docs
+Demo docs:     http://127.0.0.1:8100/docs
+Prometheus:    http://localhost:9090
+Alertmanager:  http://localhost:9093
+Grafana:       http://localhost:3001
+```
+
+## 3. Verify Prometheus targets
+
+Open:
+
+```text
+http://localhost:9090/targets
+```
+
+Confirm both are UP:
+
+```text
+ai-sre-backend
+demo-auth-service
+```
+
+## 4. Manual workflow demo
+
+In frontend:
+
+1. Select a sample incident.
+2. Click **Run Workflow**.
+3. Wait for completion.
+4. Open the latest run.
+
+Show these tabs:
+
+```text
+RCA
+Fix Plan
+Code Search
+Patch Diff
+Tests
+QA
+Evaluation
+Deploy Gate
+```
+
+Explain:
+
+```text
+The agent diagnoses the issue, finds relevant code, generates a patch, applies it safely, runs tests, and uses a deterministic deploy gate.
+```
+
+## 5. Real Prometheus DB leak demo
+
+### Reset first
+
+```bash
+curl -X POST http://127.0.0.1:8100/simulate/reset
+curl -X POST http://127.0.0.1:8000/api/prometheus/dedup/clear
+```
+
+### Trigger DB leak
+
+```bash
+curl -X POST http://127.0.0.1:8100/simulate/db-leak/on
+```
+
+Generate traffic:
+
+```bash
+for i in {1..15}; do
+  curl -X POST http://127.0.0.1:8100/login
+  echo ""
+done
+```
+
+## 6. Show Prometheus metric
+
+Open Prometheus:
+
+```text
+http://localhost:9090
+```
+
+Query:
+
+```promql
+demo_db_active_connections
+```
+
+Expected:
+
+```text
+Value rises to 9 or 10
+```
+
+## 7. Show Prometheus alert
+
+Open:
+
+```text
+http://localhost:9090/alerts
+```
+
+Show:
+
+```text
+DemoDatabaseConnectionLeak FIRING
+```
+
+Explain:
+
+```text
+Prometheus detected a real metric condition from the demo auth service.
+```
+
+## 8. Show Alertmanager
+
+Open:
+
+```text
+http://localhost:9093
+```
+
+Show:
+
+```text
+DemoDatabaseConnectionLeak
+```
+
+Explain:
+
+```text
+Alertmanager received the alert and sent it to the AI backend webhook.
+```
+
+## 9. Show backend workflow logs
+
+In backend terminal, show:
+
+```text
+POST /api/prometheus/webhook
+STARTING INCIDENT WORKFLOW
+```
+
+Then show steps:
+
+```text
+RCA
+Fix Plan
+Codebase Search
+Patch Diff
+Patch Apply
+Tests
+QA
+Evaluation
+Deploy Gate
+Memory
+Metrics
+Run History
+```
+
+## 10. Show frontend latest run
+
+Open frontend:
+
+```text
+http://localhost:3000
+```
+
+Click **Refresh**.
+
+Open the newest run:
+
+```text
+Database Connection Leak
+auth-service
+critical
+```
+
+Show:
+
+### Code Search
+
+Expected files:
+
+```text
+services/auth/login.py
+services/auth/db.py
+tests/test_login.py
+```
+
+### Patch Diff
+
+Expected fix:
+
+```text
+Wrap DB usage in try/finally and close connection in all paths.
+```
+
+### Tests
+
+Expected:
+
+```text
+3 passed, 0 failed
+```
+
+### Deploy Gate
+
+Expected:
+
+```text
+staging_allowed: true
+production_allowed: false
+production_requires_human: true
+```
+
+## 11. Show deduplication
+
+Send the same webhook twice or wait for Alertmanager repeat.
+
+Expected:
+
+```text
+First alert: processed
+Second same alert: skipped during cooldown
+```
+
+Check:
+
+```text
+http://127.0.0.1:8000/api/prometheus/dedup
+```
+
+Explain:
+
+```text
+This prevents the same firing alert from spamming the AI workflow repeatedly.
+```
+
+## 12. Show Grafana
+
+Open:
+
+```text
+http://localhost:3001
+```
+
+Show dashboard panels:
+
+```text
+Workflow runs
+Deploy gate decisions
+Memory saves
+Workflow duration
+Runs by service
+```
+
+## 13. Final explanation
+
+Say:
+
+```text
+This project demonstrates a production-style AI SRE agent. A real service emits metrics, Prometheus detects an incident, Alertmanager triggers the AI backend, the agent performs RCA, searches the codebase, generates a patch, applies it safely, runs tests, evaluates the result, blocks production through a deterministic deploy gate, and stores Reflexion memory for future incidents.
+```
+
+## 14. Reset after demo
+
+```bash
+curl -X POST http://127.0.0.1:8100/simulate/reset
+```
+
+Optional:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/prometheus/dedup/clear
+```
+
+````
+
+After this, run:
+
+```bash
+git add README.md docs/demo_flow.md
+git commit -m "Add final README and demo flow documentation"
+````
