@@ -1847,5 +1847,153 @@
         "rca_analysis": "Root Cause:\nDatabase connection leak or pool exhaustion in the auth/login path.\n\nExplanation:\nThe incident contains database pool exhaustion signals, high latency/error rate, and traces showing sessions remaining active after login requests. This strongly indicates connections are acquired but not reliably released on all code paths.\n\nImportant Signals:\n- database connection pool exhausted\n- too many active sessions\n- login trace kept DB session active\n\nConfidence:\n95%",
         "fix_plan": "Fix Plan:\nStop the database connection leak in the login/auth path and validate that every connection is released.\n\nEngineering Changes:\n- Wrap DB usage in try/finally or a context manager.\n- Close/release the connection in all success, invalid-user, invalid-password, timeout, and exception paths.\n- Add connection lifecycle logging and active pool metrics.\n\nDeployment Risks:\n- Incorrect cleanup could close connections too early.\n- Pool configuration changes could hide the real leak if used as the only fix.\n\nRollback Strategy:\n- Revert the login/db cleanup patch.\n- Keep temporary rate limiting or pool-size mitigation if needed.\n\nRequired Tests:\n- Successful login closes the connection.\n- Unknown user closes the connection.\n- Bad password closes the connection.\n- Forced DB error path closes the connection.\n- Load test confirms active connections return to baseline.",
         "qa_validation": "QA Validation Summary:\nReviewed the RCA, fix plan, and generated patch artifact. The proposed change is suitable for isolated staging validation if deterministic tests pass.\n\nRegression Risks:\n- Resource cleanup changes may affect connection lifecycle assumptions.\n- Missing tests could allow the same leak to return.\n\nRecommended Tests:\n- Run unit tests for login success and failure paths.\n- Run integration smoke tests against the auth-service.\n- Confirm active DB connections return to baseline.\n\nDeployment Decision:\nAPPROVED\n\nReason:\nThe patch addresses the likely connection leak with deterministic cleanup and should be validated through tests before staging."
+    },
+    {
+        "timestamp": "2026-05-10 04:28:01.892467",
+        "incident_title": "Database Connection Leak",
+        "service": "auth-service",
+        "severity": "critical",
+        "learning_summary": "Resolved incident involving Database Connection Leak using structured RCA, remediation planning, and QA validation.",
+        "important_signals": {
+            "logs": [
+                "Database connection pool exhausted",
+                "Timeout while querying users table",
+                "Too many active database sessions"
+            ],
+            "metrics": {
+                "alert_status": "firing",
+                "alertname": "DatabaseConnectionPoolExhausted",
+                "severity": "critical",
+                "service": "auth-service",
+                "job": "auth-service",
+                "instance": "auth-service-pod-7d9c",
+                "started_at": "2026-05-10T04:28:01.486Z",
+                "ended_at": null,
+                "fingerprint": null,
+                "generator_url": null,
+                "cpu_usage": "92%",
+                "memory_usage": "88%",
+                "p95_latency": "3200ms",
+                "error_rate": "18%"
+            },
+            "trace_summary": [
+                "POST /login \u2192 db.query()",
+                "Database session remained active",
+                "Repeated connection retries detected"
+            ]
+        },
+        "rca_analysis": "Root Cause:\nDatabase connection leak or pool exhaustion in the auth/login path.\n\nExplanation:\nThe incident contains database pool exhaustion signals, high latency/error rate, and traces showing sessions remaining active after login requests. This strongly indicates connections are acquired but not reliably released on all code paths.\n\nImportant Signals:\n- database connection pool exhausted\n- too many active sessions\n- login trace kept DB session active\n\nConfidence:\n95%",
+        "fix_plan": "Fix Plan:\nStop the database connection leak in the login/auth path and validate that every connection is released.\n\nEngineering Changes:\n- Wrap DB usage in try/finally or a context manager.\n- Close/release the connection in all success, invalid-user, invalid-password, timeout, and exception paths.\n- Add connection lifecycle logging and active pool metrics.\n\nDeployment Risks:\n- Incorrect cleanup could close connections too early.\n- Pool configuration changes could hide the real leak if used as the only fix.\n\nRollback Strategy:\n- Revert the login/db cleanup patch.\n- Keep temporary rate limiting or pool-size mitigation if needed.\n\nRequired Tests:\n- Successful login closes the connection.\n- Unknown user closes the connection.\n- Bad password closes the connection.\n- Forced DB error path closes the connection.\n- Load test confirms active connections return to baseline.",
+        "qa_validation": "QA Validation Summary:\nReviewed the RCA, fix plan, and generated patch artifact. The proposed change is suitable for isolated staging validation if deterministic tests pass.\n\nRegression Risks:\n- Resource cleanup changes may affect connection lifecycle assumptions.\n- Missing tests could allow the same leak to return.\n\nRecommended Tests:\n- Run unit tests for login success and failure paths.\n- Run integration smoke tests against the auth-service.\n- Confirm active DB connections return to baseline.\n\nDeployment Decision:\nAPPROVED\n\nReason:\nThe patch addresses the likely connection leak with deterministic cleanup and should be validated through tests before staging."
+    },
+    {
+        "timestamp": "2026-05-10 04:29:38.006221",
+        "incident_title": "Memory Leak In Analytics Service",
+        "service": "analytics-service",
+        "severity": "critical",
+        "learning_summary": "Resolved incident involving Memory Leak In Analytics Service using structured RCA, remediation planning, and QA validation.",
+        "important_signals": {
+            "logs": [
+                "Large objects retained in memory",
+                "Garbage collection frequency increased",
+                "Container killed due to OOM"
+            ],
+            "metrics": {
+                "memory_usage": "97%",
+                "container_restarts": "12",
+                "response_time": "4100ms"
+            },
+            "trace_summary": [
+                "Analytics aggregation loop never released memory",
+                "Large datasets persisted between requests"
+            ]
+        },
+        "rca_analysis": "Root Cause:\nMemory leak caused by retained large objects or unbounded cache growth.\n\nExplanation:\nMemory and restart signals indicate objects are accumulating between requests.\n\nImportant Signals:\n- high memory usage\n- OOM/restarts\n- retained objects\n\nConfidence:\n86%",
+        "fix_plan": "Fix Plan:\nApply the smallest safe remediation, add regression tests, and deploy only through staging.\n\nEngineering Changes:\n- Patch the suspected failure path.\n- Add observability around the suspected component.\n\nDeployment Risks:\n- Unknown regression risk due to limited telemetry.\n\nRollback Strategy:\n- Revert patch and restore previous configuration.\n\nRequired Tests:\n- Unit, integration, and smoke tests for the impacted service.",
+        "qa_validation": "QA Validation Summary:\nReviewed the RCA, fix plan, and generated patch artifact. The proposed change is suitable for isolated staging validation if deterministic tests pass.\n\nRegression Risks:\n- Resource cleanup changes may affect connection lifecycle assumptions.\n- Missing tests could allow the same leak to return.\n\nRecommended Tests:\n- Run unit tests for login success and failure paths.\n- Run integration smoke tests against the auth-service.\n- Confirm active DB connections return to baseline.\n\nDeployment Decision:\nAPPROVED\n\nReason:\nThe patch addresses the likely connection leak with deterministic cleanup and should be validated through tests before staging."
+    },
+    {
+        "timestamp": "2026-05-10 04:29:43.024433",
+        "incident_title": "Memory Leak In Analytics Service",
+        "service": "analytics-service",
+        "severity": "critical",
+        "learning_summary": "Resolved incident involving Memory Leak In Analytics Service using structured RCA, remediation planning, and QA validation.",
+        "important_signals": {
+            "logs": [
+                "Large objects retained in memory",
+                "Garbage collection frequency increased",
+                "Container killed due to OOM"
+            ],
+            "metrics": {
+                "memory_usage": "97%",
+                "container_restarts": "12",
+                "response_time": "4100ms"
+            },
+            "trace_summary": [
+                "Analytics aggregation loop never released memory",
+                "Large datasets persisted between requests"
+            ]
+        },
+        "rca_analysis": "Root Cause:\nMemory leak caused by retained large objects or unbounded cache growth.\n\nExplanation:\nMemory and restart signals indicate objects are accumulating between requests.\n\nImportant Signals:\n- high memory usage\n- OOM/restarts\n- retained objects\n\nConfidence:\n86%",
+        "fix_plan": "Fix Plan:\nApply the smallest safe remediation, add regression tests, and deploy only through staging.\n\nEngineering Changes:\n- Patch the suspected failure path.\n- Add observability around the suspected component.\n\nDeployment Risks:\n- Unknown regression risk due to limited telemetry.\n\nRollback Strategy:\n- Revert patch and restore previous configuration.\n\nRequired Tests:\n- Unit, integration, and smoke tests for the impacted service.",
+        "qa_validation": "QA Validation Summary:\nReviewed the RCA, fix plan, and generated patch artifact. The proposed change is suitable for isolated staging validation if deterministic tests pass.\n\nRegression Risks:\n- Resource cleanup changes may affect connection lifecycle assumptions.\n- Missing tests could allow the same leak to return.\n\nRecommended Tests:\n- Run unit tests for login success and failure paths.\n- Run integration smoke tests against the auth-service.\n- Confirm active DB connections return to baseline.\n\nDeployment Decision:\nAPPROVED\n\nReason:\nThe patch addresses the likely connection leak with deterministic cleanup and should be validated through tests before staging."
+    },
+    {
+        "timestamp": "2026-05-10 04:29:48.456733",
+        "incident_title": "Frontend Dashboard Crash",
+        "service": "dashboard-frontend",
+        "severity": "high",
+        "learning_summary": "Resolved incident involving Frontend Dashboard Crash using structured RCA, remediation planning, and QA validation.",
+        "important_signals": {
+            "logs": [
+                "TypeError: Cannot read property 'name' of undefined",
+                "React component crashed during render"
+            ],
+            "metrics": {
+                "frontend_errors": "146",
+                "crash_rate": "37%",
+                "page_load_time": "5400ms"
+            },
+            "trace_summary": [
+                "GET /profile executed successfully",
+                "Frontend rendering failed",
+                "Null object passed into component"
+            ]
+        },
+        "rca_analysis": "Root Cause:\nFrontend render crash caused by missing null/undefined guards.\n\nExplanation:\nThe logs point to a component reading properties from undefined profile data during render.\n\nImportant Signals:\n- TypeError\n- undefined/null object\n- frontend render failed\n\nConfidence:\n88%",
+        "fix_plan": "Fix Plan:\nAdd defensive null guards and fallback UI around profile/dashboard rendering.\n\nEngineering Changes:\n- Validate API response shape before rendering.\n- Use optional chaining/default values for missing profile fields.\n- Add an error boundary for the dashboard component.\n\nDeployment Risks:\n- Fallback UI may hide upstream API bugs if not logged.\n\nRollback Strategy:\n- Revert component guard changes.\n\nRequired Tests:\n- Render with complete profile.\n- Render with missing profile.\n- Render with null nested fields.",
+        "qa_validation": "QA Validation Summary:\nReviewed the RCA, fix plan, and generated patch artifact. The proposed change is suitable for isolated staging validation if deterministic tests pass.\n\nRegression Risks:\n- Resource cleanup changes may affect connection lifecycle assumptions.\n- Missing tests could allow the same leak to return.\n\nRecommended Tests:\n- Run unit tests for login success and failure paths.\n- Run integration smoke tests against the auth-service.\n- Confirm active DB connections return to baseline.\n\nDeployment Decision:\nAPPROVED\n\nReason:\nThe patch is reviewable and low risk for staging, but production still requires human approval."
+    },
+    {
+        "timestamp": "2026-05-10 04:29:58.693923",
+        "incident_title": "Deploy Gate Blocked Staging",
+        "service": "ai-sre-agent",
+        "severity": "critical",
+        "learning_summary": "Resolved incident involving Deploy Gate Blocked Staging using structured RCA, remediation planning, and QA validation.",
+        "important_signals": {
+            "logs": [
+                "The deterministic deploy gate blocked a generated patch from staging deployment."
+            ],
+            "metrics": {
+                "alert_status": "firing",
+                "alertname": "DeployGateBlockedStaging",
+                "severity": "critical",
+                "service": "ai-sre-agent",
+                "job": "ai-sre-backend",
+                "instance": "host.docker.internal:8000",
+                "started_at": "2026-05-10T04:29:53.301Z",
+                "ended_at": "0001-01-01T00:00:00Z",
+                "fingerprint": "f79de652f2d5b713",
+                "generator_url": "http://442ed7909346:9090/graph?g0.expr=increase%28ai_sre_deploy_gate_decisions_total%7Bstaging_allowed%3D%22false%22%7D%5B10m%5D%29+%3E+0&g0.tab=1"
+            },
+            "trace_summary": [
+                "Prometheus/Alertmanager alert received through webhook.",
+                "Alert name: DeployGateBlockedStaging",
+                "Service: ai-sre-agent"
+            ]
+        },
+        "rca_analysis": "Root Cause:\nUnknown production degradation requiring log, metric, and trace review.\n\nExplanation:\nThe available telemetry is insufficient for a high-confidence deterministic diagnosis.\n\nImportant Signals:\n- generic alert payload\n- missing detailed telemetry\n\nConfidence:\n60%",
+        "fix_plan": "Fix Plan:\nApply the smallest safe remediation, add regression tests, and deploy only through staging.\n\nEngineering Changes:\n- Patch the suspected failure path.\n- Add observability around the suspected component.\n\nDeployment Risks:\n- Unknown regression risk due to limited telemetry.\n\nRollback Strategy:\n- Revert patch and restore previous configuration.\n\nRequired Tests:\n- Unit, integration, and smoke tests for the impacted service.",
+        "qa_validation": "QA Validation Summary:\nReviewed the RCA, fix plan, and generated patch artifact. The proposed change is suitable for isolated staging validation if deterministic tests pass.\n\nRegression Risks:\n- Resource cleanup changes may affect connection lifecycle assumptions.\n- Missing tests could allow the same leak to return.\n\nRecommended Tests:\n- Run unit tests for login success and failure paths.\n- Run integration smoke tests against the auth-service.\n- Confirm active DB connections return to baseline.\n\nDeployment Decision:\nAPPROVED\n\nReason:\nThe patch is reviewable and low risk for staging, but production still requires human approval."
     }
 ]
