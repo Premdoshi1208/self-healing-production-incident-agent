@@ -15,7 +15,7 @@ A production-style autonomous incident remediation agent that turns Prometheus a
 
 Most AI agent projects stop at chat or simple tool calling. This project demonstrates a realistic production workflow:
 
-```text
+
 Production issue
 ↓
 Prometheus detects symptoms
@@ -45,7 +45,7 @@ Human approval remains required
 Memory stores learning for future incidents
 ↓
 Prometheus/Grafana track system health
-````
+
 
 ## Core features
 
@@ -69,7 +69,7 @@ Prometheus/Grafana track system health
 
 ## Architecture
 
-```text
+
 Demo Auth Service
   └── /metrics
         ↓
